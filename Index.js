@@ -26,7 +26,29 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
-   // Send a ping to confirm a successful connection
+    const bookmarkCollection = client.db('bookmarkDB').collection('bookmark');
+    //  Bookmark Related api
+    // Get bookmarks
+    app.get('/bookmarks/:email', async (req, res) => {
+      const result = await bookmarkCollection.find({ email: req.params.email }).toArray();
+      res.send(result)
+    });
+
+    // Add a bookmark
+    app.post('/bookmarks', async (req, res) => {
+      const cursor = bookmarkCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    });
+
+    // Delete a bookmark
+    app.delete('/bookmarks/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await bookmarkCollection.deleteOne(query);
+      res.send(result);
+    });
+    // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
