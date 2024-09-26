@@ -5,7 +5,10 @@ require("dotenv").config();
 const cors = require("cors");
 
 const port = process.env.PORT || 5000;
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5000",
+           "http://localhost:5173"] 
+}));
 app.use(express.json());
 
 //======================================
@@ -27,6 +30,10 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
+
+    const bookmarkCollection = client.db('bookmarkDB').collection('bookmark')
+   
+
     const userCollection = client.db("newsGridDB").collection("users");
     const newsCollection = client.db("newsGridDB").collection("news");
     //ACCESS_TOKEN_SECRET=yuhsau98w327ydwhem
@@ -123,8 +130,34 @@ async function run() {
       const result = await userCollection.deleteOne(query);
       res.send(result);
     });
+    
+    //bookmark
+     app.get('/bookmark/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const result = await bookmarkCollection.find(query).toArray();
+      res.send(result)
+    })
+
+    // Add a bookmark
+    app.post('/bookmarks', async (req, res) => {
+      const newBookmark = req.body;
+      const result = await bookmarkCollection.insertOne(newBookmark);
+      res.send(result)
+    })
+
+    // Delete a bookmark
+    app.delete('/bookmarks/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await bookmarkCollection.deleteOne(query);
+      res.send(result);
+    });
+    // Send a ping to confirm a successful connection
+
 
     //await client.db("admin").command({ ping: 1 });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
