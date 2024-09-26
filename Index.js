@@ -3,7 +3,10 @@ const app = express();
 require("dotenv").config();
 const cors = require("cors");
 const port = process.env.PORT || 5000;
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5000",
+           "http://localhost:5173"] 
+}));
 app.use(express.json());
 
 //======================================
@@ -29,7 +32,7 @@ async function run() {
     const bookmarkCollection = client.db('bookmarkDB').collection('bookmark');
     //  Bookmark Related api
     // Get bookmarks
-    app.get('/bookmarks/:email', async (req, res) => {
+    app.get('/bookmark/:email', async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const result = await bookmarkCollection.find(query).toArray();
