@@ -30,16 +30,18 @@ async function run() {
     //  Bookmark Related api
     // Get bookmarks
     app.get('/bookmarks/:email', async (req, res) => {
-      const result = await bookmarkCollection.find({ email: req.params.email }).toArray();
+      const email = req.params.email;
+      const query = { email };
+      const result = await bookmarkCollection.find(query).toArray();
       res.send(result)
-    });
+    })
 
     // Add a bookmark
     app.post('/bookmarks', async (req, res) => {
-      const cursor = bookmarkCollection.find();
-      const result = await cursor.toArray();
+      const newBookmark = req.body;
+      const result = await bookmarkCollection.insertOne(newBookmark);
       res.send(result)
-    });
+    })
 
     // Delete a bookmark
     app.delete('/bookmarks/:id', async (req, res) => {
