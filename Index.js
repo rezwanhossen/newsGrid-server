@@ -43,7 +43,7 @@ async function run() {
     const bookmarkCollection = client.db("newsGridDB").collection("bookmark");
     const userCollection = client.db("newsGridDB").collection("users");
 
-    //ACCESS_TOKEN_SECRET=yuhsau98w327ydwhem
+    
     //jwt auth related api
     app.post("/jwt", async (req, res) => {
       const user = req.body;
