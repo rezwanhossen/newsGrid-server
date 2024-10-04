@@ -9,7 +9,6 @@ const API_KEY = process.env.API_KEY;
 app.use(
   cors({
     origin: [
-      "http://localhost:5000",
       "http://localhost:5173",
       "http://localhost:5174",
       "https://newsgrid-95245.web.app",
@@ -38,12 +37,12 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const bookmarkCollection = client.db("newsGridDB").collection("bookmark");
     const userCollection = client.db("newsGridDB").collection("users");
 
-    //ACCESS_TOKEN_SECRET=yuhsau98w327ydwhem
+    
     //jwt auth related api
     app.post("/jwt", async (req, res) => {
       const user = req.body;
