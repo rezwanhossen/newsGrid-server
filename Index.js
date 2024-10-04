@@ -80,83 +80,64 @@ async function run() {
       next();
     };
 
-
     // Naimul Islum -------------------------
-        const fetchNews = (url , res)       => {
-          axios.get(url)
-          .then(response => {
-            if(response.data.totalResults > 0){
-              
-                res.json({
-                  status : 200 , 
-                  success : true,
-                  message : 'Successfully fetched the data',
-                  data : response.data
-                })
-            }
-            else{
-              res.json({
-                  status : 200,
-                  success : true,
-                  message : "No more results to show"
-              })
-            }
-          })
-          .catch(error => {
+    const fetchNews = (url, res) => {
+      axios
+        .get(url)
+        .then((response) => {
+          if (response.data.totalResults > 0) {
             res.json({
-              status : 500,
-              success : false ,
-               message : 'Failed to fetch data from the api',
-               error : error.message
-            })
-          })
-        }
-
-        // all News and category
-        app.get('/all-news' ,(req  , res) => {
-          let pageSize = parseInt(req.query.pageSize) || 100;
-          let page = parseInt(req.query.page) || 1;
-          
- 
-              const url =  `https://newsapi.org/v2/everything?q=page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
-              fetchNews(url , res)
-           
-           
-
-           
+              status: 200,
+              success: true,
+              message: "Successfully fetched the data",
+              data: response.data,
+            });
+          } else {
+            res.json({
+              status: 200,
+              success: true,
+              message: "No more results to show",
+            });
+          }
         })
-        
-        //top-headlines : category
-        app.get('/top-headlines' , (req , res) => {
-            let pageSize = parseInt(req.query.pageSize) || 95;
-            let page = parseInt(req.query.page) || 1;
-            let category = req.query.category || 'business';
-            console.log("category" , category);
+        .catch((error) => {
+          res.json({
+            status: 500,
+            success: false,
+            message: "Failed to fetch data from the api",
+            error: error.message,
+          });
+        });
+    };
 
-            let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
-            fetchNews(url , res)
-        })
-        // app.get('/country',(req , res) => {
-        //   let pageSize = parseInt(req.query.pageSize) || 80;
-        //   let page = parseInt(req.query.page) || 1;
-        //   let country = req.params.iso || 'af';
-        //   let url = `https://newsapi.org/v2/top-headlines?country=${country}&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
-        //   fetchNews(url  , res)
-        // })
+    // all News and category
+    app.get("/all-news", (req, res) => {
+      let pageSize = parseInt(req.query.pageSize) || 100;
+      let page = parseInt(req.query.page) || 1;
 
+      const url = `https://newsapi.org/v2/everything?q=page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
+      fetchNews(url, res);
+    });
+
+    //top-headlines : category
+    app.get("/top-headlines", (req, res) => {
+      let pageSize = parseInt(req.query.pageSize) || 95;
+      let page = parseInt(req.query.page) || 1;
+      let category = req.query.category || "business";
+      console.log("category", category);
+
+      let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
+      fetchNews(url, res);
+    });
+    // app.get('/country',(req , res) => {
+    //   let pageSize = parseInt(req.query.pageSize) || 80;
+    //   let page = parseInt(req.query.page) || 1;
+    //   let country = req.params.iso || 'af';
+    //   let url = `https://newsapi.org/v2/top-headlines?country=${country}&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
+    //   fetchNews(url  , res)
+    // })
 
     // ---------------------------------------
-
-
-
-
-
-
-
-
-
-
-
     //user collection related
 
     app.get("/users", async (req, res) => {
@@ -240,8 +221,6 @@ async function run() {
     // Send a ping to confirm a successful connection
 
     // await client.db("admin").command({ ping: 1 });
-
-   
   } finally {
     //await client.close();
   }
