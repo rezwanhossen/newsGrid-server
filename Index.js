@@ -86,6 +86,39 @@ async function run() {
         .then((response) => {
           if (response.data.totalResults > 0) {
             res.json({
+
+              status : 500,
+              success : false ,
+               message : 'Failed to fetch data from the api',
+               error : error.message
+            })
+          })
+        }
+
+        // all news and category
+        app.get('/all-news' ,(req  , res) => {
+          let pageSize = parseInt(req.query.pageSize) || 100;
+          let page = parseInt(req.query.page) || 1;
+          
+ 
+              const url =  `https://newsapi.org/v2/everything?q=page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
+              fetchNews(url , res)
+           
+           
+
+           
+        })
+        
+        //top-headlines : category
+        app.get('/top-headlines' , (req , res) => {
+            let pageSize = parseInt(req.query.pageSize) || 95;
+            let page = parseInt(req.query.page) || 1;
+            let category = req.query.category || 'business';
+            console.log("category" , category);
+
+            let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
+            fetchNews(url , res)
+
               status: 200,
               success: true,
               message: "Successfully fetched the data",
@@ -98,6 +131,7 @@ async function run() {
               message: "No more results to show",
             });
           }
+
         })
         .catch((error) => {
           res.json({
