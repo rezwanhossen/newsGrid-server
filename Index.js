@@ -111,7 +111,7 @@ async function run() {
           })
         }
 
-        // all News and category
+        // all news and category
         app.get('/all-news' ,(req  , res) => {
           let pageSize = parseInt(req.query.pageSize) || 100;
           let page = parseInt(req.query.page) || 1;
