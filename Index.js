@@ -213,7 +213,7 @@ async function run() {
       
            
       });
-      // user  category news
+      // user  Category news
       app.get('/myNews/category' , async(req , res) => {
         const category = req.query.category;
         const query = {category : category};
