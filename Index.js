@@ -15,7 +15,9 @@ app.use(
     ],
   })
 );
-app.use(express.json());
+// app.use(express.json());
+app.use(express.json({ limit: '5mb' }));  // JSON পেরলডের জন্য
+app.use(express.urlencoded({ limit: '5mb', extended: true })); 
 
 //======================================
 //CfOZMY3YLVMDnpDW
@@ -41,6 +43,8 @@ async function run() {
 
     const bookmarkCollection = client.db("newsGridDB").collection("bookmark");
     const userCollection = client.db("newsGridDB").collection("users");
+    const addNewsCollection = client.db("newsGridDB").collection("addNews");
+    const allNewsCollection = client.db("newsGridDB").collection("allNews");
 
     
     //jwt auth related api
@@ -161,7 +165,7 @@ async function run() {
 
 
     // Naimul Islum ----------------------------
-        const fetchNews = (url , res)       => {
+        const fetchNews = (url , res)  => {
           axios.get(url)
           .then(response => {
             if(response.data.totalResults > 0){
@@ -181,6 +185,85 @@ async function run() {
               })
             }
           })
+        }
+        
+        
+        
+        app.get('/all-news' ,(req  , res) => {
+          let pageSize = parseInt(req.query.pageSize) || 100;
+          let page = parseInt(req.query.page) || 1;
+          
+      
+              const url =  `https://newsapi.org/v2/everything?q=page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
+              fetchNews(url , res)
+           
+           
+      
+           
+        })
+        
+        //top-headlines : category
+        app.get('/top-headlines' , (req , res) => {
+            let pageSize = parseInt(req.query.pageSize) || 95;
+            let page = parseInt(req.query.page) || 1;
+            let category = req.query.category || 'business';
+            console.log("category" , category);
+      
+            let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
+            fetchNews(url , res)
+      
+           
+      });
+      // user  category news
+      app.get('/myNews/category' , async(req , res) => {
+        const category = req.query.category;
+        const query = {category : category};
+        const news = await addNewsCollection.find(query).toArray();
+        console.log(news , category)
+        res.send(news);
+      })
+
+          // add news
+          app.get('/myNews/:email' , async(req , res) => {
+            const email = req.params.email;
+            const query ={ email : email};
+            const news = await addNewsCollection.find(query).toArray();
+            res.send(news);
+          })
+          app.get('/myNews' , async(req , res) => {
+            
+            
+            const news = await addNewsCollection.find().toArray();
+            res.send(news);
+          })
+          app.delete('/myNews/:id' , async(req , res) => {
+            const id = req.params.id;
+            const query = { _id : new ObjectId(id)}
+            const result = await addNewsCollection.deleteOne(query);
+            res.send(result);
+          })
+          app.patch('/myNews/:status' , async(req , res) => {
+            const news = req.body;
+            const status = req.params.status;
+            const query = {_id : new ObjectId(news?._id)}
+            
+            const updateDoc ={
+              $set : {
+                status : status
+              }
+            }
+            const result = await addNewsCollection.updateOne(query , updateDoc);
+            res.send(result);
+            
+          })
+         app.post('/addNews' , async(req , res) => {
+              const news = req?.body;
+              
+              const result = await addNewsCollection.insertOne(news);
+              
+              
+              res.send(result);
+        })
           
     
 
@@ -202,43 +285,16 @@ async function run() {
     // await client.db("admin").command({ ping: 1 });
   } 
   
-  app.get('/all-news' ,(req  , res) => {
-    let pageSize = parseInt(req.query.pageSize) || 100;
-    let page = parseInt(req.query.page) || 1;
-    
-
-        const url =  `https://newsapi.org/v2/everything?q=page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
-        fetchNews(url , res)
-     
-     
-
-     
-  })
+  finally {
+    //await client.close();
+  }
+}  
   
-  //top-headlines : category
-  app.get('/top-headlines' , (req , res) => {
-      let pageSize = parseInt(req.query.pageSize) || 95;
-      let page = parseInt(req.query.page) || 1;
-      let category = req.query.category || 'business';
-      console.log("category" , category);
-
-      let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
-      fetchNews(url , res)
-
-     
-});
 // ------------------------------------------
 
 
 
 
-
-
-}
-finally {
-    //await client.close();
-  }
-}
 
 run().catch(console.dir);
 
