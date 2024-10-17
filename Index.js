@@ -104,6 +104,7 @@ async function run() {
             userEmail: userEmail,
           },
         };
+        // completed
 
         const options = { upsert: true };
 
