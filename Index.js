@@ -13,11 +13,13 @@ app.use(
       "http://localhost:5174",
       "https://newsgrid-95245.web.app",
     ],
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-// app.use(express.json());
-app.use(express.json({ limit: '5mb' }));  // JSON পেরলডের জন্য
-app.use(express.urlencoded({ limit: '5mb', extended: true })); 
+
+app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ limit: "5mb", extended: true }));
 
 //======================================
 //CfOZMY3YLVMDnpDW
@@ -45,6 +47,9 @@ async function run() {
     const userCollection = client.db("newsGridDB").collection("users");
     const addNewsCollection = client.db("newsGridDB").collection("addNews");
     const allNewsCollection = client.db("newsGridDB").collection("allNews");
+    const personalNewsCollection = client
+      .db("newsGridDB")
+      .collection("personalnewscategoryss");
 
     //jwt auth related api
     app.post("/jwt", async (req, res) => {
@@ -82,10 +87,62 @@ async function run() {
       next();
     };
 
-
     app.get("/users", async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
+    });
+    // Store or update the selected value category (personalized news category)
+    app.post("/storevalue", async (req, res) => {
+      const { userEmail, selectedCategory } = req.body;
+
+      try {
+        const query = { userEmail: userEmail };
+
+        const updateDoc = {
+          $set: {
+            selectedCategory: selectedCategory,
+            userEmail: userEmail,
+          },
+        };
+        // completed
+
+        const options = { upsert: true };
+
+        const result = await personalNewsCollection.updateOne(
+          query,
+          updateDoc,
+          options
+        );
+
+        if (result.upsertedCount > 0) {
+          res.send({
+            message: "New category added",
+            insertedId: result.upsertedId,
+          });
+        } else {
+          res.send({ message: "Category updated successfully" });
+        }
+      } catch (error) {
+        console.log("Error in /storevalue:", error);
+        res.status(500).send({ message: "Failed to store or update category" });
+      }
+    });
+    app.get("/getstorevalue/:email", async (req, res) => {
+      const userEmail = req.params.email;
+
+      try {
+        const result = await personalNewsCollection.findOne({ userEmail });
+        if (result) {
+          res.send(result);
+        } else {
+          res.status(404).send({ message: "No data found for this email" });
+        }
+      } catch (error) {
+        console.error("Error retrieving data:", error);
+        res
+          .status(500)
+          .send({ error: "An error occurred while fetching the data" });
+      }
     });
 
     app.get("/useron/:email", async (req, res) => {
@@ -162,112 +219,93 @@ async function run() {
       res.send(result);
     });
 
-
     // Naimul Islum ----------------------------
-        const fetchNews = (url , res)  => {
-          axios.get(url)
-          .then(response => {
-            if(response.data.totalResults > 0){
-              
-                res.json({
-                  status : 200 , 
-                  success : true,
-                  message : 'Successfully fetched the data',
-                  data : response.data
-                })
-            }
-            else{
-              res.json({
-                  status : 200,
-                  success : true,
-                  message : "No more results to show"
-              })
-            }
-          })
+    const fetchNews = (url, res) => {
+      axios.get(url).then((response) => {
+        if (response.data.totalResults > 0) {
+          res.json({
+            status: 200,
+            success: true,
+            message: "Successfully fetched the data",
+            data: response.data,
+          });
+        } else {
+          res.json({
+            status: 200,
+            success: true,
+            message: "No more results to show",
+          });
         }
-        
-        
-        
-        app.get('/all-news' ,(req  , res) => {
-          let pageSize = parseInt(req.query.pageSize) || 100;
-          let page = parseInt(req.query.page) || 1;
-          
-      
-              const url =  `https://newsapi.org/v2/everything?q=page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
-              fetchNews(url , res)
-           
-           
-      
-           
-        })
-        
-        //top-headlines : category
-        app.get('/top-headlines' , (req , res) => {
-            let pageSize = parseInt(req.query.pageSize) || 95;
-            let page = parseInt(req.query.page) || 1;
-            let category = req.query.category || 'business';
-            console.log("category" , category);
-      
-            let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
-            fetchNews(url , res)
-      
-           
       });
-      // user  Category news
-      app.get('/myNews/category' , async(req , res) => {
-        const category = req.query.category;
-        const query = {category : category};
-        const news = await addNewsCollection.find(query).toArray();
-        console.log(news , category)
-        res.send(news);
-      })
+    };
 
-          // add news
-          app.get('/myNews/:email' , async(req , res) => {
-            const email = req.params.email;
-            const query ={ email : email};
-            const news = await addNewsCollection.find(query).toArray();
-            res.send(news);
-          })
-          app.get('/myNews' , async(req , res) => {
-            
-            
-            const news = await addNewsCollection.find().toArray();
-            res.send(news);
-          })
-          app.delete('/myNews/:id' , async(req , res) => {
-            const id = req.params.id;
-            const query = { _id : new ObjectId(id)}
-            const result = await addNewsCollection.deleteOne(query);
-            res.send(result);
-          })
-          app.patch('/myNews/:status' , async(req , res) => {
-            const news = req.body;
-            const status = req.params.status;
-            const query = {_id : new ObjectId(news?._id)}
-            
-            const updateDoc ={
-              $set : {
-                status : status
-              }
-            }
-            const result = await addNewsCollection.updateOne(query , updateDoc);
-            res.send(result);
-            
-          })
-         app.post('/addNews' , async(req , res) => {
-              const news = req?.body;
-              
-              const result = await addNewsCollection.insertOne(news);
-              
-              
-              res.send(result);
-        })
-          
-    
+    app.get("/all-news", (req, res) => {
+      let pageSize = parseInt(req.query.pageSize) || 100;
+      let page = parseInt(req.query.page) || 1;
 
-        // all news and category
-     
+      const url = `https://newsapi.org/v2/everything?q=page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
+      fetchNews(url, res);
+    });
+
+    //top-headlines : category
+    app.get("/top-headlines", (req, res) => {
+      let pageSize = parseInt(req.query.pageSize) || 95;
+      let page = parseInt(req.query.page) || 1;
+      let category = req.query.category || "business";
+      console.log("category", category);
+
+      let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
+      fetchNews(url, res);
+    });
+    // user  Category news
+    app.get("/myNews/category", async (req, res) => {
+      const category = req.query.category;
+      const query = { category: category };
+      const news = await addNewsCollection.find(query).toArray();
+      console.log(news, category);
+      res.send(news);
+    });
+
+    // add news
+    app.get("/myNews/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const news = await addNewsCollection.find(query).toArray();
+      res.send(news);
+    });
+    app.get("/myNews", async (req, res) => {
+      const news = await addNewsCollection.find().toArray();
+      res.send(news);
+    });
+    app.delete("/myNews/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await addNewsCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.patch("/myNews/:status", async (req, res) => {
+      const news = req.body;
+      const status = req.params.status;
+      const query = { _id: new ObjectId(news?._id) };
+
+      const updateDoc = {
+        $set: {
+          status: status,
+        },
+      };
+      const result = await addNewsCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+    app.post("/addNews", async (req, res) => {
+      const news = req?.body;
+
+      const result = await addNewsCollection.insertOne(news);
+
+      res.send(result);
+    });
+
+    // all news and category
+
     //   let pageSize = parseInt(req.query.pageSize) || 80;
     //   let page = parseInt(req.query.page) || 1;
     //   let country = req.params.iso || 'af';
@@ -278,22 +316,15 @@ async function run() {
     // ---------------------------------------
     //user collection related
 
-    
     // Send a ping to confirm a successful connection
 
     // await client.db("admin").command({ ping: 1 });
-  } 
-  
-  finally {
+  } finally {
     //await client.close();
   }
-}  
-  
+}
+
 // ------------------------------------------
-
-
-
-
 
 run().catch(console.dir);
 
