@@ -19,8 +19,15 @@ app.use(
       "http://localhost:5174",
       "https://newsgrid-95245.web.app",
     ],
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+
+//======================================
+//CfOZMY3YLVMDnpDW
+
 
 // Parse incoming JSON and URL-encoded data
 app.use(express.json({ limit: "5mb" }));
@@ -44,8 +51,17 @@ async function run() {
     const bookmarkCollection = client.db("newsGridDB").collection("bookmark");
     const userCollection = client.db("newsGridDB").collection("users");
     const addNewsCollection = client.db("newsGridDB").collection("addNews");
+
     const paymentcollection = client.db("newsGridDB").collection("payment");
     // JWT authentication API
+
+    const allNewsCollection = client.db("newsGridDB").collection("allNews");
+    const personalNewsCollection = client
+      .db("newsGridDB")
+      .collection("personalnewscategoryss");
+
+    //jwt auth related api
+
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       try {
@@ -83,6 +99,7 @@ async function run() {
       next();
     };
 
+
     // ===================pyment =======================
 
     app.post("/create-payment-intent", verifyToken, async (req, res) => {
@@ -110,11 +127,70 @@ async function run() {
     });
     //================users=========================
 
-    // Get all users
     app.get("/users", async (req, res) => {
-      const users = await userCollection.find().toArray();
-      res.send(users);
+      const result = await userCollection.find().toArray();
+      res.send(result);
     });
+    // Store or update the selected value category (personalized news category)
+    app.post("/storevalue", async (req, res) => {
+      const { userEmail, selectedCategory } = req.body;
+
+      try {
+        const query = { userEmail: userEmail };
+
+        const updateDoc = {
+          $set: {
+            selectedCategory: selectedCategory,
+            userEmail: userEmail,
+          },
+        };
+        // completed
+
+        const options = { upsert: true };
+
+        const result = await personalNewsCollection.updateOne(
+          query,
+          updateDoc,
+          options
+        );
+
+        if (result.upsertedCount > 0) {
+          res.send({
+            message: "New category added",
+            insertedId: result.upsertedId,
+          });
+        } else {
+          res.send({ message: "Category updated successfully" });
+        }
+      } catch (error) {
+        console.log("Error in /storevalue:", error);
+        res.status(500).send({ message: "Failed to store or update category" });
+      }
+    });
+    app.get("/getstorevalue/:email", async (req, res) => {
+      const userEmail = req.params.email;
+
+      try {
+        const result = await personalNewsCollection.findOne({ userEmail });
+        if (result) {
+          res.send(result);
+        } else {
+          res.status(404).send({ message: "No data found for this email" });
+        }
+      } catch (error) {
+        console.error("Error retrieving data:", error);
+        res
+          .status(500)
+          .send({ error: "An error occurred while fetching the data" });
+      }
+    });
+
+
+//     // Get all users
+//     app.get("/users", async (req, res) => {
+//       const users = await userCollection.find().toArray();
+//       res.send(users);
+//     });
 
     // Get user by email
     app.get("/useron/:email", async (req, res) => {
@@ -183,7 +259,11 @@ async function run() {
       res.send(result);
     });
 
+
     // Fetch news data from external API
+
+    // Naimul Islum ----------------------------
+
     const fetchNews = (url, res) => {
       axios.get(url).then((response) => {
         if (response.data.totalResults > 0) {
@@ -203,13 +283,15 @@ async function run() {
       });
     };
 
-    // Fetch all news
+
     app.get("/all-news", (req, res) => {
-      const pageSize = parseInt(req.query.pageSize) || 100;
-      const page = parseInt(req.query.page) || 1;
+      let pageSize = parseInt(req.query.pageSize) || 100;
+      let page = parseInt(req.query.page) || 1;
+
       const url = `https://newsapi.org/v2/everything?q=page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
       fetchNews(url, res);
     });
+
 
     // Fetch top headlines by category
     app.get("/top-headlines", (req, res) => {
@@ -234,14 +316,44 @@ async function run() {
       res.send(news);
     });
     //get news
+
+    //top-headlines : category
+    app.get("/top-headlines", (req, res) => {
+      let pageSize = parseInt(req.query.pageSize) || 95;
+      let page = parseInt(req.query.page) || 1;
+      let category = req.query.category || "business";
+      console.log("category", category);
+
+      let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
+      fetchNews(url, res);
+    });
+    // user  Category news
+    app.get("/myNews/category", async (req, res) => {
+      const category = req.query.category;
+      const query = { category: category };
+      const news = await addNewsCollection.find(query).toArray();
+      console.log(news, category);
+      res.send(news);
+    });
+
+    // add news
+    app.get("/myNews/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const news = await addNewsCollection.find(query).toArray();
+      res.send(news);
+    });
+
     app.get("/myNews", async (req, res) => {
       const news = await addNewsCollection.find().toArray();
       res.send(news);
     });
 
+    
+
     // Add a news article
     app.post("/addNews", async (req, res) => {
-      const news = req.body;
+      const news = req?.body;
       const result = await addNewsCollection.insertOne(news);
       res.send(result);
     });
@@ -270,6 +382,21 @@ async function run() {
     res.status(500).send({ message: "Internal Server Error" });
   }
 }
+
+   
+   
+   
+
+    
+
+    // await client.db("admin").command({ ping: 1 });
+  } finally {
+    //await client.close();
+  }
+}
+
+// ------------------------------------------
+
 
 run().catch(console.dir);
 
