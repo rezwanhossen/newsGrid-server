@@ -3,15 +3,17 @@ const app = express();
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const cors = require("cors");
+const port = process.env.PORT || 5000;
+
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-const axios = require("axios");
+// const axios = require("axios");
+const { default: axios } = require("axios");
+
 //sk_test_51PQ7GHJBliBBMOOO6OovqSdpedSUaycZFI9sFauPT4rYlb5oK2BdCqGkPkcAlzy6ZCmgG7h8SLoORrGHOvLklWpW00zw9JLyZV
 const stripe = require("stripe")(
   "sk_test_51PQ7GHJBliBBMOOO6OovqSdpedSUaycZFI9sFauPT4rYlb5oK2BdCqGkPkcAlzy6ZCmgG7h8SLoORrGHOvLklWpW00zw9JLyZV"
 );
-const port = process.env.PORT || 5000;
 const API_KEY = process.env.API_KEY;
-
 app.use(
   cors({
     origin: [
@@ -19,19 +21,14 @@ app.use(
       "http://localhost:5174",
       "https://newsgrid-95245.web.app",
     ],
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-
-//======================================
-//CfOZMY3YLVMDnpDW
-
+app.use(express.json());
 
 // Parse incoming JSON and URL-encoded data
-app.use(express.json({ limit: "5mb" }));
-app.use(express.urlencoded({ limit: "5mb", extended: true }));
+// app.use(express.json({ limit: "5mb" }));
+// app.use(express.urlencoded({ limit: "5mb", extended: true }));
 
 const uri =
   "mongodb+srv://newsGrid:CfOZMY3YLVMDnpDW@cluster0.p5jkrsj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"; // Store the URI in an env variable
@@ -46,22 +43,19 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect(); // Ensure client is connected before making any DB operations
+    // await client.connect(); // Ensure client is connected before making any DB operations
 
     const bookmarkCollection = client.db("newsGridDB").collection("bookmark");
     const userCollection = client.db("newsGridDB").collection("users");
     const addNewsCollection = client.db("newsGridDB").collection("addNews");
-
     const paymentcollection = client.db("newsGridDB").collection("payment");
-    // JWT authentication API
-
     const allNewsCollection = client.db("newsGridDB").collection("allNews");
     const personalNewsCollection = client
       .db("newsGridDB")
       .collection("personalnewscategoryss");
 
+    //========== rezwan start =======================
     //jwt auth related api
-
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       try {
@@ -99,7 +93,6 @@ async function run() {
       next();
     };
 
-
     // ===================pyment =======================
 
     app.post("/create-payment-intent", verifyToken, async (req, res) => {
@@ -122,15 +115,176 @@ async function run() {
     app.post("/payment", async (req, res) => {
       const item = req.body;
       const result = await paymentcollection.insertOne(item);
-
       res.send(result);
     });
+
     //================users=========================
 
+    // Get all users
     app.get("/users", async (req, res) => {
-      const result = await userCollection.find().toArray();
+      const users = await userCollection.find().toArray();
+      res.send(users);
+    });
+
+    // Get user by email
+    app.get("/useron/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = await userCollection.findOne({ email });
+      res.send(user);
+    });
+
+    // Check if user is admin
+    app.get("/user/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ message: "Unauthorized access" });
+      }
+      const user = await userCollection.findOne({ email });
+      const isAdmin = user?.role === "admin";
+      res.send({ admin: isAdmin });
+    });
+
+    // Make a user an admin
+    app.patch("/users/admin/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await userCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { role: "admin" } }
+      );
       res.send(result);
     });
+
+    // Add a new user
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const existingUser = await userCollection.findOne({ email: user?.email });
+      if (existingUser) return res.send(existingUser);
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // Delete a user
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
+      res.send(result);
+    });
+    // ============== rezwan end=========================
+    //ashan start========================
+
+    // Bookmark operations
+    app.get("/bookmark/:email", async (req, res) => {
+      const email = req.params.email;
+      const bookmarks = await bookmarkCollection.find({ email }).toArray();
+      res.send(bookmarks);
+    });
+
+    // Add a bookmark
+    app.post("/bookmarks", async (req, res) => {
+      const newBookmark = req.body;
+      const result = await bookmarkCollection.insertOne(newBookmark);
+      res.send(result);
+    });
+
+    // Delete a bookmark
+    app.delete("/bookmarks/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await bookmarkCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+    //ashan end================================
+    // Naimul Islum  Start  ----------------------------
+
+    const fetchNews = (url, res) => {
+      axios.get(url).then((response) => {
+        console.log("results ", response?.data?.articles?.length);
+        if (response.data.totalResults > 0) {
+          res.json({
+            status: 200,
+            success: true,
+            message: "Successfully fetched the data",
+            data: response.data,
+          });
+        } else {
+          res.json({
+            status: 200,
+            success: true,
+            message: "No more results to show",
+          });
+        }
+      });
+    };
+
+    app.get("/all-news", (req, res) => {
+      // let pageSize = parseInt(req.query.pageSize) || 100;
+      // let page = parseInt(req.query.page) || 1;
+      const url = `https://newsapi.org/v2/everything?q=bitcoin&apiKey=${API_KEY}`;
+      fetchNews(url, res);
+    });
+
+    //top-headlines : category
+    app.get("/top-headlines", (req, res) => {
+      let pageSize = parseInt(req.query.pageSize) || 95;
+      let page = parseInt(req.query.page) || 1;
+      let category = req.query.category || "business";
+      console.log("category", category);
+
+      let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
+      fetchNews(url, res);
+    });
+    // user  Category news
+    app.get("/myNews/category", async (req, res) => {
+      const category = req.query.category;
+      const query = { category: category };
+      const news = await addNewsCollection.find(query).toArray();
+      console.log(news, category);
+      res.send(news);
+    });
+
+    // add news
+    app.get("/myNews/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const news = await addNewsCollection.find(query).toArray();
+      res.send(news);
+    });
+    app.get("/myNews", async (req, res) => {
+      const news = await addNewsCollection.find().toArray();
+      res.send(news);
+    });
+    app.delete("/myNews/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await addNewsCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.patch("/myNews/:status", async (req, res) => {
+      const news = req.body;
+      const status = req.params.status;
+      const query = { _id: new ObjectId(news?._id) };
+
+      const updateDoc = {
+        $set: {
+          status: status,
+        },
+      };
+      const result = await addNewsCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+    app.post("/addNews", async (req, res) => {
+      const news = req?.body;
+
+      const result = await addNewsCollection.insertOne(news);
+
+      res.send(result);
+    });
+
+    //=============end naimul islam ====
+
+    //========== rafit rana==========
+
     // Store or update the selected value category (personalized news category)
     app.post("/storevalue", async (req, res) => {
       const { userEmail, selectedCategory } = req.body;
@@ -185,219 +339,17 @@ async function run() {
       }
     });
 
-
-//     // Get all users
-//     app.get("/users", async (req, res) => {
-//       const users = await userCollection.find().toArray();
-//       res.send(users);
-//     });
-
-    // Get user by email
-    app.get("/useron/:email", async (req, res) => {
-      const email = req.params.email;
-      const user = await userCollection.findOne({ email });
-      res.send(user);
-    });
-
-    // Check if user is admin
-    app.get("/user/admin/:email", verifyToken, async (req, res) => {
-      const email = req.params.email;
-      if (email !== req.decoded.email) {
-        return res.status(403).send({ message: "Unauthorized access" });
-      }
-      const user = await userCollection.findOne({ email });
-      const isAdmin = user?.role === "admin";
-      res.send({ admin: isAdmin });
-    });
-
-    // Make a user an admin
-    app.patch("/users/admin/:id", async (req, res) => {
-      const id = req.params.id;
-      const result = await userCollection.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { role: "admin" } }
-      );
-      res.send(result);
-    });
-
-    // Add a new user
-    app.post("/users", async (req, res) => {
-      const user = req.body;
-      const existingUser = await userCollection.findOne({ email: user?.email });
-      if (existingUser) return res.send(existingUser);
-      const result = await userCollection.insertOne(user);
-      res.send(result);
-    });
-
-    // Delete a user
-    app.delete("/users/:id", async (req, res) => {
-      const id = req.params.id;
-      const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
-      res.send(result);
-    });
-
-    // Bookmark operations
-    app.get("/bookmark/:email", async (req, res) => {
-      const email = req.params.email;
-      const bookmarks = await bookmarkCollection.find({ email }).toArray();
-      res.send(bookmarks);
-    });
-
-    // Add a bookmark
-    app.post("/bookmarks", async (req, res) => {
-      const newBookmark = req.body;
-      const result = await bookmarkCollection.insertOne(newBookmark);
-      res.send(result);
-    });
-
-    // Delete a bookmark
-    app.delete("/bookmarks/:id", async (req, res) => {
-      const id = req.params.id;
-      const result = await bookmarkCollection.deleteOne({
-        _id: new ObjectId(id),
-      });
-      res.send(result);
-    });
-
-
-    // Fetch news data from external API
-
-    // Naimul Islum ----------------------------
-
-    const fetchNews = (url, res) => {
-      axios.get(url).then((response) => {
-        if (response.data.totalResults > 0) {
-          res.json({
-            status: 200,
-            success: true,
-            message: "Successfully fetched the data",
-            data: response.data,
-          });
-        } else {
-          res.json({
-            status: 200,
-            success: true,
-            message: "No more results to show",
-          });
-        }
-      });
-    };
-
-
-    app.get("/all-news", (req, res) => {
-      let pageSize = parseInt(req.query.pageSize) || 100;
-      let page = parseInt(req.query.page) || 1;
-
-      const url = `https://newsapi.org/v2/everything?q=page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
-      fetchNews(url, res);
-    });
-
-
-    // Fetch top headlines by category
-    app.get("/top-headlines", (req, res) => {
-      const pageSize = parseInt(req.query.pageSize) || 95;
-      const page = parseInt(req.query.page) || 1;
-      const category = req.query.category || "business";
-      const url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
-      fetchNews(url, res);
-    });
-
-    // Get user-added news by category
-    app.get("/myNews/category", async (req, res) => {
-      const category = req.query.category;
-      const news = await addNewsCollection.find({ category }).toArray();
-      res.send(news);
-    });
-
-    // Get news added by a specific user
-    app.get("/myNews/:email", async (req, res) => {
-      const email = req.params.email;
-      const news = await addNewsCollection.find({ email }).toArray();
-      res.send(news);
-    });
-    //get news
-
-    //top-headlines : category
-    app.get("/top-headlines", (req, res) => {
-      let pageSize = parseInt(req.query.pageSize) || 95;
-      let page = parseInt(req.query.page) || 1;
-      let category = req.query.category || "business";
-      console.log("category", category);
-
-      let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
-      fetchNews(url, res);
-    });
-    // user  Category news
-    app.get("/myNews/category", async (req, res) => {
-      const category = req.query.category;
-      const query = { category: category };
-      const news = await addNewsCollection.find(query).toArray();
-      console.log(news, category);
-      res.send(news);
-    });
-
-    // add news
-    app.get("/myNews/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      const news = await addNewsCollection.find(query).toArray();
-      res.send(news);
-    });
-
-    app.get("/myNews", async (req, res) => {
-      const news = await addNewsCollection.find().toArray();
-      res.send(news);
-    });
-
-    
-
-    // Add a news article
-    app.post("/addNews", async (req, res) => {
-      const news = req?.body;
-      const result = await addNewsCollection.insertOne(news);
-      res.send(result);
-    });
-
-    // Delete a news article
-    app.delete("/myNews/:id", async (req, res) => {
-      const id = req.params.id;
-      const result = await addNewsCollection.deleteOne({
-        _id: new ObjectId(id),
-      });
-      res.send(result);
-    });
-
-    // Update news status
-    app.patch("/myNews/:status", async (req, res) => {
-      const news = req.body;
-      const status = req.params.status;
-      const result = await addNewsCollection.updateOne(
-        { _id: new ObjectId(news?._id) },
-        { $set: { status } }
-      );
-      res.send(result);
-    });
-  } catch (error) {
-    console.error("Error connecting to MongoDB:", error);
-    res.status(500).send({ message: "Internal Server Error" });
-  }
-}
-
-   
-   
-   
-
-    
-
-    // await client.db("admin").command({ ping: 1 });
+    //=========== end rana============
   } finally {
+    // catch (error) {
+    //   console.error("Error connecting to MongoDB:", error);
+    //   res.status(500).send({ message: "Internal Server Error" });
+    // }
     //await client.close();
   }
 }
 
 // ------------------------------------------
-
-
 run().catch(console.dir);
 
 app.get("/", (req, res) => {
