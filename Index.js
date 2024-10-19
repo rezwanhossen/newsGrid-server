@@ -15,9 +15,9 @@ app.use(
     ],
   })
 );
-// app.use(express.json());
-app.use(express.json({ limit: '5mb' }));  // JSON পেরলডের জন্য
-app.use(express.urlencoded({ limit: '5mb', extended: true })); 
+
+app.use(express.json()); 
+
 
 //======================================
 //CfOZMY3YLVMDnpDW
@@ -163,10 +163,12 @@ async function run() {
     });
 
 
-    // Naimul Islum ----------------------------
-        const fetchNews = (url , res)  => {
+    // Naimul Islum  Start  ------------------------------
+
+      const fetchNews = (url , res)  => {
           axios.get(url)
           .then(response => {
+            console.log("results "  ,  response?.data?.articles?.length)
             if(response.data.totalResults > 0){
               
                 res.json({
@@ -189,17 +191,11 @@ async function run() {
         
         
         app.get('/all-news' ,(req  , res) => {
-          let pageSize = parseInt(req.query.pageSize) || 100;
-          let page = parseInt(req.query.page) || 1;
-          
-      
-              const url =  `https://newsapi.org/v2/everything?q=page=${page}&pageSize=${pageSize}&apiKey=${API_KEY}`;
-              fetchNews(url , res)
-           
-           
-      
-           
-        })
+          // let pageSize = parseInt(req.query.pageSize) || 100;
+          // let page = parseInt(req.query.page) || 1;
+          const url =  `https://newsapi.org/v2/everything?q=bitcoin&apiKey=${API_KEY}`;
+          fetchNews(url , res);
+})
         
         //top-headlines : category
         app.get('/top-headlines' , (req , res) => {
@@ -275,7 +271,7 @@ async function run() {
     //   fetchNews(url  , res)
     // })
 
-    // ---------------------------------------
+    // -------------- Naimul Islum End-------------------------
     //user collection related
 
     
