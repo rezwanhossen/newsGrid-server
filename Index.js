@@ -165,56 +165,12 @@ async function run() {
 
     // Naimul Islum  Start  ------------------------------
 
-      const fetchNews = (url , res)  => {
-          axios.get(url)
-          .then(response => {
-            console.log("results "  ,  response?.data?.articles?.length)
-            if(response.data.totalResults > 0){
-              
-                res.json({
-                  status : 200 , 
-                  success : true,
-                  message : 'Successfully fetched the data',
-                  data : response.data
-                })
-            }
-            else{
-              res.json({
-                  status : 200,
-                  success : true,
-                  message : "No more results to show"
-              })
-            }
-          })
-        }
-        
-        
-        
-        app.get('/all-news' ,(req  , res) => {
-          // let pageSize = parseInt(req.query.pageSize) || 100;
-          // let page = parseInt(req.query.page) || 1;
-          const url =  `https://newsapi.org/v2/everything?q=bitcoin&apiKey=${API_KEY}`;
-          fetchNews(url , res);
-})
-        
-        //top-headlines : category
-        app.get('/top-headlines' , (req , res) => {
-            let pageSize = parseInt(req.query.pageSize) || 95;
-            let page = parseInt(req.query.page) || 1;
-            let category = req.query.category || 'business';
-            console.log("category" , category);
-      
-            let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
-            fetchNews(url , res)
-      
-           
-      });
-      // user  Category news
+     // user  Category news
       app.get('/myNews/category' , async(req , res) => {
         const category = req.query.category;
         const query = {category : category};
         const news = await addNewsCollection.find(query).toArray();
-        console.log(news , category)
+        // console.log(news , category)
         res.send(news);
       })
 
