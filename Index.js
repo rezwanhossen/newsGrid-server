@@ -13,7 +13,7 @@ const { default: axios } = require("axios");
 const stripe = require("stripe")(
   "sk_test_51PQ7GHJBliBBMOOO6OovqSdpedSUaycZFI9sFauPT4rYlb5oK2BdCqGkPkcAlzy6ZCmgG7h8SLoORrGHOvLklWpW00zw9JLyZV"
 );
-const API_KEY = process.env.API_KEY;
+
 app.use(
   cors({
     origin: [
@@ -24,17 +24,9 @@ app.use(
   })
 );
 
-
-
-
 app.use(express.json());
 
-// Parse incoming JSON and URL-encoded data
-// app.use(express.json({ limit: "5mb" }));
-// app.use(express.urlencoded({ limit: "5mb", extended: true }));
-
-const uri =
-  "mongodb+srv://newsGrid:CfOZMY3YLVMDnpDW@cluster0.p5jkrsj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"; // Store the URI in an env variable
+const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Pass}@cluster0.p5jkrsj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`; // Store the URI in an env variable
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -113,6 +105,12 @@ async function run() {
     // payment collection in badge
     app.get("/payment", async (req, res) => {
       const result = await paymentcollection.find().toArray();
+      res.send(result);
+    });
+    app.get("/payments/:email", async (req, res) => {
+      const email = req.params.email;
+
+      const result = await paymentcollection.findOne(email);
       res.send(result);
     });
     app.post("/payment", async (req, res) => {
@@ -200,62 +198,53 @@ async function run() {
     //ashan end================================
     // Naimul Islum  Start  ----------------------------
 
-    
-    
+    // user  Category news
+    app.get("/myNews/category", async (req, res) => {
+      const category = req.query.category;
+      const query = { category: category };
+      const news = await addNewsCollection.find(query).toArray();
+      // console.log(news , category)
+      res.send(news);
+    });
 
+    // add news
+    app.get("/myNews/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const news = await addNewsCollection.find(query).toArray();
+      res.send(news);
+    });
+    app.get("/myNews", async (req, res) => {
+      const news = await addNewsCollection.find().toArray();
+      res.send(news);
+    });
+    app.delete("/myNews/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await addNewsCollection.deleteOne(query);
+      res.send(result);
+    });
+    app.patch("/myNews/:status", async (req, res) => {
+      const news = req.body;
+      const status = req.params.status;
+      const query = { _id: new ObjectId(news?._id) };
 
-  
-     // user  Category news
-      app.get('/myNews/category' , async(req , res) => {
-        const category = req.query.category;
-        const query = {category : category};
-        const news = await addNewsCollection.find(query).toArray();
-        // console.log(news , category)
-        res.send(news);
-      })
+      const updateDoc = {
+        $set: {
+          status: status,
+        },
+      };
+      const result = await addNewsCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+    app.post("/addNews", async (req, res) => {
+      const news = req?.body;
 
-          // add news
-          app.get('/myNews/:email' , async(req , res) => {
-            const email = req.params.email;
-            const query ={ email : email};
-            const news = await addNewsCollection.find(query).toArray();
-            res.send(news);
-          })
-          app.get('/myNews' , async(req , res) => {
-            
-            
-            const news = await addNewsCollection.find().toArray();
-            res.send(news);
-          })
-          app.delete('/myNews/:id' , async(req , res) => {
-            const id = req.params.id;
-            const query = { _id : new ObjectId(id)}
-            const result = await addNewsCollection.deleteOne(query);
-            res.send(result);
-          })
-          app.patch('/myNews/:status' , async(req , res) => {
-            const news = req.body;
-            const status = req.params.status;
-            const query = {_id : new ObjectId(news?._id)}
-            
-            const updateDoc ={
-              $set : {
-                status : status
-              }
-            }
-            const result = await addNewsCollection.updateOne(query , updateDoc);
-            res.send(result);
-            
-          })
-         app.post('/addNews' , async(req , res) => {
-              const news = req?.body;
-              
-              const result = await addNewsCollection.insertOne(news);
-              
-              
-              res.send(result);
-        })
-     //========== rafit rana==========
+      const result = await addNewsCollection.insertOne(news);
+
+      res.send(result);
+    });
+    //========== rafit rana==========
 
     // Store or update the selected value category (personalized news category)
     app.post("/storevalue", async (req, res) => {
@@ -263,7 +252,6 @@ async function run() {
 
       try {
         const query = { userEmail: userEmail };
-
 
         const updateDoc = {
           $set: {
@@ -312,20 +300,11 @@ async function run() {
       }
     });
 
-          
-    
-
-       ======== end rana============
-     
-    
-  } 
-  
-  finally {
+    //  ======== end rana============
+  } finally {
     //await client.close();
   }
-}  
-
-
+}
 
 // ------------------------------------------
 run().catch(console.dir);
