@@ -24,6 +24,9 @@ app.use(
   })
 );
 
+
+
+
 app.use(express.json());
 
 // Parse incoming JSON and URL-encoded data
@@ -197,93 +200,62 @@ async function run() {
     //ashan end================================
     // Naimul Islum  Start  ----------------------------
 
-    const fetchNews = (url, res) => {
-      axios.get(url).then((response) => {
-        console.log("results ", response?.data?.articles?.length);
-        if (response.data.totalResults > 0) {
-          res.json({
-            status: 200,
-            success: true,
-            message: "Successfully fetched the data",
-            data: response.data,
-          });
-        } else {
-          res.json({
-            status: 200,
-            success: true,
-            message: "No more results to show",
-          });
-        }
-      });
-    };
+    
+    
 
-    app.get("/all-news", (req, res) => {
-      // let pageSize = parseInt(req.query.pageSize) || 100;
-      // let page = parseInt(req.query.page) || 1;
-      const url = `https://newsapi.org/v2/everything?q=bitcoin&apiKey=${API_KEY}`;
-      fetchNews(url, res);
-    });
 
-    //top-headlines : category
-    app.get("/top-headlines", (req, res) => {
-      let pageSize = parseInt(req.query.pageSize) || 95;
-      let page = parseInt(req.query.page) || 1;
-      let category = req.query.category || "business";
-      console.log("category", category);
+  
+     // user  Category news
+      app.get('/myNews/category' , async(req , res) => {
+        const category = req.query.category;
+        const query = {category : category};
+        const news = await addNewsCollection.find(query).toArray();
+        // console.log(news , category)
+        res.send(news);
+      })
 
-      let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
-      fetchNews(url, res);
-    });
-    // user  Category news
-    app.get("/myNews/category", async (req, res) => {
-      const category = req.query.category;
-      const query = { category: category };
-      const news = await addNewsCollection.find(query).toArray();
-      console.log(news, category);
-      res.send(news);
-    });
-
-    // add news
-    app.get("/myNews/:email", async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      const news = await addNewsCollection.find(query).toArray();
-      res.send(news);
-    });
-    app.get("/myNews", async (req, res) => {
-      const news = await addNewsCollection.find().toArray();
-      res.send(news);
-    });
-    app.delete("/myNews/:id", async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await addNewsCollection.deleteOne(query);
-      res.send(result);
-    });
-    app.patch("/myNews/:status", async (req, res) => {
-      const news = req.body;
-      const status = req.params.status;
-      const query = { _id: new ObjectId(news?._id) };
-
-      const updateDoc = {
-        $set: {
-          status: status,
-        },
-      };
-      const result = await addNewsCollection.updateOne(query, updateDoc);
-      res.send(result);
-    });
-    app.post("/addNews", async (req, res) => {
-      const news = req?.body;
-
-      const result = await addNewsCollection.insertOne(news);
-
-      res.send(result);
-    });
-
-    //=============end naimul islam ====
-
-    //========== rafit rana==========
+          // add news
+          app.get('/myNews/:email' , async(req , res) => {
+            const email = req.params.email;
+            const query ={ email : email};
+            const news = await addNewsCollection.find(query).toArray();
+            res.send(news);
+          })
+          app.get('/myNews' , async(req , res) => {
+            
+            
+            const news = await addNewsCollection.find().toArray();
+            res.send(news);
+          })
+          app.delete('/myNews/:id' , async(req , res) => {
+            const id = req.params.id;
+            const query = { _id : new ObjectId(id)}
+            const result = await addNewsCollection.deleteOne(query);
+            res.send(result);
+          })
+          app.patch('/myNews/:status' , async(req , res) => {
+            const news = req.body;
+            const status = req.params.status;
+            const query = {_id : new ObjectId(news?._id)}
+            
+            const updateDoc ={
+              $set : {
+                status : status
+              }
+            }
+            const result = await addNewsCollection.updateOne(query , updateDoc);
+            res.send(result);
+            
+          })
+         app.post('/addNews' , async(req , res) => {
+              const news = req?.body;
+              
+              const result = await addNewsCollection.insertOne(news);
+              
+              
+              res.send(result);
+        })
+     //========== rafit rana==========
 
     // Store or update the selected value category (personalized news category)
     app.post("/storevalue", async (req, res) => {
@@ -291,6 +263,7 @@ async function run() {
 
       try {
         const query = { userEmail: userEmail };
+
 
         const updateDoc = {
           $set: {
@@ -339,15 +312,20 @@ async function run() {
       }
     });
 
-    //=========== end rana============
-  } finally {
-    // catch (error) {
-    //   console.error("Error connecting to MongoDB:", error);
-    //   res.status(500).send({ message: "Internal Server Error" });
-    // }
+          
+    
+
+       ======== end rana============
+     
+    
+  } 
+  
+  finally {
     //await client.close();
   }
-}
+}  
+
+
 
 // ------------------------------------------
 run().catch(console.dir);
