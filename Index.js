@@ -13,7 +13,7 @@ const { default: axios } = require("axios");
 const stripe = require("stripe")(
   "sk_test_51PQ7GHJBliBBMOOO6OovqSdpedSUaycZFI9sFauPT4rYlb5oK2BdCqGkPkcAlzy6ZCmgG7h8SLoORrGHOvLklWpW00zw9JLyZV"
 );
-const API_KEY = process.env.API_KEY;
+
 app.use(
   cors({
     origin: [
@@ -26,12 +26,7 @@ app.use(
 
 app.use(express.json());
 
-// Parse incoming JSON and URL-encoded data
-// app.use(express.json({ limit: "5mb" }));
-// app.use(express.urlencoded({ limit: "5mb", extended: true }));
-
-const uri =
-  "mongodb+srv://newsGrid:CfOZMY3YLVMDnpDW@cluster0.p5jkrsj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"; // Store the URI in an env variable
+const uri = `mongodb+srv://${process.env.DB_User}:${process.env.DB_Pass}@cluster0.p5jkrsj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`; // Store the URI in an env variable
 
 const client = new MongoClient(uri, {
   serverApi: {
@@ -110,6 +105,12 @@ async function run() {
     // payment collection in badge
     app.get("/payment", async (req, res) => {
       const result = await paymentcollection.find().toArray();
+      res.send(result);
+    });
+    app.get("/payments/:email", async (req, res) => {
+      const email = req.params.email;
+
+      const result = await paymentcollection.findOne(email);
       res.send(result);
     });
     app.post("/payment", async (req, res) => {
@@ -197,49 +198,12 @@ async function run() {
     //ashan end================================
     // Naimul Islum  Start  ----------------------------
 
-    const fetchNews = (url, res) => {
-      axios.get(url).then((response) => {
-        console.log("results ", response?.data?.articles?.length);
-        if (response.data.totalResults > 0) {
-          res.json({
-            status: 200,
-            success: true,
-            message: "Successfully fetched the data",
-            data: response.data,
-          });
-        } else {
-          res.json({
-            status: 200,
-            success: true,
-            message: "No more results to show",
-          });
-        }
-      });
-    };
-
-    app.get("/all-news", (req, res) => {
-      // let pageSize = parseInt(req.query.pageSize) || 100;
-      // let page = parseInt(req.query.page) || 1;
-      const url = `https://newsapi.org/v2/everything?q=bitcoin&apiKey=${API_KEY}`;
-      fetchNews(url, res);
-    });
-
-    //top-headlines : category
-    app.get("/top-headlines", (req, res) => {
-      let pageSize = parseInt(req.query.pageSize) || 95;
-      let page = parseInt(req.query.page) || 1;
-      let category = req.query.category || "business";
-      console.log("category", category);
-
-      let url = `https://newsapi.org/v2/top-headlines?category=${category}&language=en&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
-      fetchNews(url, res);
-    });
     // user  Category news
     app.get("/myNews/category", async (req, res) => {
       const category = req.query.category;
       const query = { category: category };
       const news = await addNewsCollection.find(query).toArray();
-      console.log(news, category);
+      // console.log(news , category)
       res.send(news);
     });
 
@@ -280,9 +244,6 @@ async function run() {
 
       res.send(result);
     });
-
-    //=============end naimul islam ====
-
     //========== rafit rana==========
 
     // Store or update the selected value category (personalized news category)
@@ -339,12 +300,8 @@ async function run() {
       }
     });
 
-    //=========== end rana============
+    //  ======== end rana============
   } finally {
-    // catch (error) {
-    //   console.error("Error connecting to MongoDB:", error);
-    //   res.status(500).send({ message: "Internal Server Error" });
-    // }
     //await client.close();
   }
 }
