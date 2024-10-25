@@ -218,22 +218,9 @@ async function run() {
           
     
 
-        // all news and category
      
-    //   let pageSize = parseInt(req.query.pageSize) || 80;
-    //   let page = parseInt(req.query.page) || 1;
-    //   let country = req.params.iso || 'af';
-    //   let url = `https://newsapi.org/v2/top-headlines?country=${country}&page=${page}&pageSize${pageSize}&apiKey=${API_KEY}`;
-    //   fetchNews(url  , res)
-    // })
-
-    // -------------- Naimul Islum End-------------------------
-    //user collection related
-
+     
     
-    // Send a ping to confirm a successful connection
-
-    // await client.db("admin").command({ ping: 1 });
   } 
   
   finally {
