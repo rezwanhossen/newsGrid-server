@@ -44,7 +44,7 @@ async function run() {
     const userCollection = client.db("newsGridDB").collection("users");
     const addNewsCollection = client.db("newsGridDB").collection("addNews");
     const paymentcollection = client.db("newsGridDB").collection("payment");
-    const allNewsCollection = client.db("newsGridDB").collection("allNews");
+    const allNewsCollection = client.db("newsGridDB").collection("allnews");
     const personalNewsCollection = client
       .db("newsGridDB")
       .collection("personalnewscategoryss");
@@ -243,6 +243,11 @@ async function run() {
       const result = await addNewsCollection.insertOne(news);
 
       res.send(result);
+    });
+
+    app.get("/allnews", async (req, res) => {
+      const news = await allNewsCollection.find().toArray();
+      res.send(news);
     });
     //========== rafit rana==========
 
