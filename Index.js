@@ -443,11 +443,11 @@ app.get("/interactions", async (req, res) => {
 
     
 
-    // await client.db("admin").command({ ping: 1 });
-  } finally {
-    //await client.close();
-  }
-}
+//     // await client.db("admin").command({ ping: 1 });
+//   } finally {
+//     //await client.close();
+//   }
+// }
 
 // ------------------------------------------
 
