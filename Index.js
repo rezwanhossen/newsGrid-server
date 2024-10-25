@@ -44,6 +44,7 @@ async function run() {
     const userCollection = client.db("newsGridDB").collection("users");
     const addNewsCollection = client.db("newsGridDB").collection("addNews");
     const paymentcollection = client.db("newsGridDB").collection("payment");
+
     const allNewsCollection = client.db("newsGridDB").collection("allnews");
     const personalNewsCollection = client
       .db("newsGridDB")
@@ -199,6 +200,10 @@ async function run() {
     // Naimul Islum  Start  ----------------------------
 
     // user  Category news
+    app.get("/allnews", async (req, res) => {
+      const news = await allNewsCollection.find().toArray();
+      res.send(news);
+    });
     app.get("/myNews/category", async (req, res) => {
       const category = req.query.category;
       const query = { category: category };
@@ -245,10 +250,12 @@ async function run() {
       res.send(result);
     });
 
+
     app.get("/allnews", async (req, res) => {
       const news = await allNewsCollection.find().toArray();
       res.send(news);
     });
+
     //========== rafit rana==========
 
     // Store or update the selected value category (personalized news category)
