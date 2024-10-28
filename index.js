@@ -47,6 +47,9 @@ async function run() {
     const messageCollection = client.db("newsGridDB").collection("message");
     const allNewsCollection = client.db("newsGridDB").collection("allnews");
     const likeCollection = client.db("newsGridDB").collection("like");
+    const locationNewsCollection = client
+      .db("newsGridDB")
+      .collection("locationNews");
     const personalNewsCollection = client
       .db("newsGridDB")
       .collection("personalnewscategoryss");
@@ -190,6 +193,11 @@ async function run() {
       const item = req.body;
       const result = await messageCollection.insertOne(item);
       res.send(result);
+    });
+    //============location news==========
+    app.get("/locationnews", async (req, res) => {
+      const locationNews = await locationNewsCollection.find().toArray();
+      res.send(locationNews);
     });
 
     //==========like ===========
