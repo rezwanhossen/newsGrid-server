@@ -20,6 +20,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5174",
       "https://newsgrid-95245.web.app",
+      "https://news-grid-d61a6.web.app"
     ],
   })
 );
@@ -44,12 +45,8 @@ async function run() {
     const userCollection = client.db("newsGridDB").collection("users");
     const addNewsCollection = client.db("newsGridDB").collection("addNews");
     const paymentcollection = client.db("newsGridDB").collection("payment");
-    const messageCollection = client.db("newsGridDB").collection("message");
+    
     const allNewsCollection = client.db("newsGridDB").collection("allnews");
-    const likeCollection = client.db("newsGridDB").collection("like");
-    const locationNewsCollection = client
-      .db("newsGridDB")
-      .collection("locationNews");
     const personalNewsCollection = client
       .db("newsGridDB")
       .collection("personalnewscategoryss");
@@ -112,10 +109,11 @@ async function run() {
       const result = await paymentcollection.find().toArray();
       res.send(result);
     });
-    app.get("/payments/:email", async (req, res) => {
-      const email = req.params.email;
 
-      const result = await paymentcollection.findOne(email);
+    app.get("/payments/:email",  async (req, res) => {
+      const email = req?.params?.email;
+      const query = { email : email };
+      const result = await paymentcollection.find(query).toArray();
       res.send(result);
     });
     app.post("/payment", async (req, res) => {
@@ -175,90 +173,6 @@ async function run() {
       const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
     });
-
-    //add comment data======================
-    app.get("/message", async (req, res) => {
-      const result = await messageCollection.find().toArray();
-      res.send(result);
-    });
-
-    app.get("/message/:newsId", async (req, res) => {
-      const newsId = req.params.newsId;
-      const query = { newsId: newsId };
-      const result = await messageCollection.find(query).toArray();
-      res.send(result);
-    });
-
-    app.post("/message", async (req, res) => {
-      const item = req.body;
-      const result = await messageCollection.insertOne(item);
-      res.send(result);
-    });
-    //============location news==========
-    app.get("/locationnews", async (req, res) => {
-      const locationNews = await locationNewsCollection.find().toArray();
-      res.send(locationNews);
-    });
-
-    //==========like ===========
-    app.get("/likeCount/:newsId", async (req, res) => {
-      const newsId = req.params.newsId;
-
-      try {
-        const count = await likeCollection.countDocuments({ newsId, like: 1 });
-        res.send({ count });
-      } catch (error) {
-        console.error("Error fetching like count:", error);
-        res.status(500).send("Server Error");
-      }
-    });
-
-    app.get("/likeStatus/:newsId/:email", async (req, res) => {
-      const { newsId, email } = req.params;
-      const query = { newsId: newsId, email: email };
-
-      try {
-        const result = await likeCollection.findOne(query);
-        if (result) {
-          res.send({ liked: result.like === 1 });
-        } else {
-          res.send({ liked: false });
-        }
-      } catch (error) {
-        console.error("Error fetching like status:", error);
-        res.status(500).send("Server Error");
-      }
-    });
-
-    app.post("/LikeCount", async (req, res) => {
-      const { newsId, email, like } = req.body;
-
-      try {
-        const existingLike = await likeCollection.findOne({ newsId, email });
-
-        if (existingLike) {
-          const updatedLike = await likeCollection.updateOne(
-            { newsId, email },
-            { $set: { like } }
-          );
-          return res.send({
-            success: true,
-            updated: updatedLike.modifiedCount > 0,
-          });
-        } else {
-          const newLike = await likeCollection.insertOne({
-            newsId,
-            email,
-            like,
-          });
-          return res.send({ success: true, insertedId: newLike.insertedId });
-        }
-      } catch (error) {
-        console.error("Error updating like status:", error);
-        res.status(500).send("Server Error");
-      }
-    });
-
     // ============== rezwan end=========================
     //ashan start========================
 
@@ -338,11 +252,9 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/allnews", async (req, res) => {
-      const news = await allNewsCollection.find().toArray();
-      res.send(news);
-    });
-
+    // Naimul End ____________
+    
+    
     //========== rafit rana==========
 
     // Store or update the selected value category (personalized news category)
