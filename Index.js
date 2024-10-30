@@ -20,6 +20,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5174",
       "https://newsgrid-95245.web.app",
+      "https://news-grid-d61a6.web.app"
     ],
   })
 );
@@ -108,10 +109,11 @@ async function run() {
       const result = await paymentcollection.find().toArray();
       res.send(result);
     });
-    app.get("/payments/:email", async (req, res) => {
-      const email = req.params.email;
 
-      const result = await paymentcollection.findOne(email);
+    app.get("/payments/:email",  async (req, res) => {
+      const email = req?.params?.email;
+      const query = { email : email };
+      const result = await paymentcollection.find(query).toArray();
       res.send(result);
     });
     app.post("/payment", async (req, res) => {
@@ -249,6 +251,8 @@ async function run() {
 
       res.send(result);
     });
+
+    // Naimul End ____________
     
     
     //========== rafit rana==========
